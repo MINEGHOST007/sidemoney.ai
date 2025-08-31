@@ -1,97 +1,153 @@
-# Frontend Features - Finance Tracker App (2-Day MVP)
-*Simplified for 2-day development timeline*
+# Frontend Features - Finance Tracker MVP (24-Hour Assignment)
 
-## 🔐 Authentication & Onboarding
-- **OAuth Integration**: Google, Facebook, Apple sign-in with seamless flow
-- **JWT Token Management**: Secure token storage and refresh handling
-- **Smart Onboarding**: Progressive disclosure of features with interactive tutorials
-- **Profile Setup**: Preferences and goal setting, spend limits, monthly income form, savings deadline goals, dynamic spending calculation, preferred going-out days, location for AI custom formula, daily expense reminder time preference
+## 🔐 Authentication
+- **Google OAuth Login**: Simple Google sign-in button
+  - Redirect to dashboard after successful login
+  - Store JWT token securely
+  - Auto-redirect to login if token expired
 
-## 🏠 Landing Page (Jupiter-inspired)
-- **Hero Section**: Clean, modern design showcasing key value propositions
-- **Feature Highlights**: Interactive cards showing core app capabilities
-- **Social Proof**: User testimonials and trust indicators
-- **Responsive Design**: Mobile-first approach with seamless desktop experience
-- **Call-to-Action**: Strategic placement of signup
+## 🏠 Landing Page
+- **Hero Section**: Clean design with app value proposition
+- **Feature Highlights**: 3-4 key features with icons
+- **Call-to-Action**: "Sign in with Google" button
+- **Responsive Design**: Mobile-friendly layout
 
-## 📊 Dashboard & Analytics
-- **Financial Overview**: Real-time balance, income, expenses summary cards
-- **Interactive Charts**: 
-  - Expense breakdown by category (donut charts)
-  - Monthly spending trends (line graphs)
-  - Income vs Expense comparison (bar charts)
-  - Net worth progression over time
-- **Quick Actions**: Fast access to add transactions, view reports - daily reports
-- **Dark/Light Mode**: User preference-based theme switching
+## 📊 Dashboard
+- **Financial Summary Cards**:
+  - Total Income (current month)
+  - Total Expenses (current month)
+  - Net Balance (income - expenses)
+  - Daily Budget Remaining
+- **Quick Actions**:
+  - Add Income button
+  - Add Expense button
+  - Upload Receipt button (bonus)
+- **Recent Transactions**: Last 5 transactions with quick edit
+- **Daily Report Card**: AI-generated daily spending insights with recommendations
 
 ## 💳 Transaction Management
-- **Quick Entry**: Floating action button for instant transaction logging
-- **Smart Forms**: Auto-complete categories, payees, and descriptions
-- **Receipt Scanner**: **CLIENT-SIDE OCR** - Camera integration with browser-based OCR for automatic data extraction (no server upload for security)
-- **Bulk Upload**: Drag-and-drop CSV/Excel file processing
-- **Transaction List**: 
-  - Infinite scroll with virtual scrolling for performance
-  - Advanced filters (date range, category, amount, tags)
-  - Search functionality with highlighting
-  - Bulk operations (edit, delete, categorize)
-- **Transaction Details**: Expandable cards with edit capabilities
+- **Add Transaction Form**:
+  - Amount input (required)
+  - Type: Income/Expense radio buttons
+  - Category: Dropdown (for expenses only)
+  - Description: Text input
+  - Date: Date picker (default: today)
+- **Transaction List**:
+  - Simple table/card view
+  - Filter by date range
+  - Filter by category
+  - Edit/delete actions
+  - Pagination (20 items per page)
+- **Receipt Upload** (Bonus):
+  - Camera/file upload
+  - Show OCR results for editing
+  - Auto-fill form with extracted data
 
-## 🤖 AI-Powered Features
-- **Smart Categorization**: One-click AI category suggestions
-- **Spending Insights**: AI-generated insights and recommendations
-- **Budget Advisor**: Intelligent budget recommendations based on spending patterns
-- **Expense Prediction**: Forecast future expenses with confidence intervals
-- **Anomaly Detection**: Visual alerts for unusual spending patterns
+## 🎯 Goals Management
+- **Goals List**: Display all user goals with progress bars
+- **Add Goal Form**:
+  - Goal title
+  - Target amount
+  - Deadline date
+  - Current amount (auto-calculated from transactions)
+- **Goal Progress**: Visual progress indicators
+- **Daily Savings Calculator**: Show how much to save daily to reach goals
 
-## 📈 Charts & Visualizations
-- **Interactive Charts**: Clickable segments for drill-down analysis
-- **Comparison Views**: Side-by-side month/year comparisons
-- **Trend Analysis**: Smooth animations showing spending patterns
-- **Goal Progress**: Circular progress bars for savings goals
-- **Budget Tracking**: Visual budget vs actual spending indicators
-- **Export Options**: Save charts as images or PDF reports
+## 📈 Simple Analytics
+- **Daily Report**: AI-generated daily spending insights
+  - Today's spending summary
+  - Budget vs actual spending
+  - Category breakdown for today
+  - AI recommendations for tomorrow
+  - Spending pattern analysis
+- **Monthly Overview**:
+  - Income vs Expenses bar chart
+  - Category breakdown pie chart
+  - Monthly trend line chart
+- **Budget Tracking**:
+  - Daily budget calculation
+  - Spending by preferred days
+  - Budget vs actual spending
 
-## 🎯 Budget & Goals Management
-- **Budget Setup**: Category-wise budget allocation with sliders
-- **Visual Budget Tracking**: Progress bars with color-coded alerts
-- **Goal Creation**: SMART goal setting with target dates
-- **Milestone Celebrations**: Animated feedback for goal achievements
-- **Budget Recommendations**: AI-suggested budget adjustments
-- **Spending Alerts**: Real-time notifications when approaching limits
+## 🎨 UI/UX (Clean & Simple)
+- **Modern Design**: Clean, minimal interface
+- **Responsive Layout**: Works on mobile and desktop
+- **Color Coding**:
+  - Green for income
+  - Red for expenses
+  - Blue for goals
+- **Loading States**: Simple spinners for API calls
+- **Error Handling**: Toast notifications for errors
 
-## 🔔 Notifications & Alerts
-- **Smart Notifications**: Context-aware alerts based on user behavior
-- **Budget Warnings**: Progressive alerts (50%, 80%, 100% of budget)
-- **Achievement Badges**: Gamification elements for financial milestones
-- **Daily Reminders**: Custom time-based expense entry reminders
+## 📱 Core Pages Structure
+1. **Landing Page** (`/`)
+   - Hero section
+   - Sign in with Google
 
-## 🎨 UI/UX Design (Jupiter-inspired)
-- **Clean Minimalism**: Uncluttered interface with ample white space
-- **Color Psychology**: Strategic use of colors for financial context
-- **Typography**: Clear, readable fonts with proper hierarchy
-- **Micro-interactions**: Smooth animations and transitions
-- **Loading States**: Skeleton screens and progress indicators
+2. **Dashboard** (`/dashboard`)
+   - Summary cards
+   - Quick actions
+   - Recent transactions
 
-## 📊 Reports & Analytics
-- **Monthly Reports**: Comprehensive spending summaries
-- **Category Analysis**: Detailed breakdown of spending categories
-- **Trend Reports**: Historical analysis with predictive insights
-- **Custom Date Ranges**: Flexible reporting periods
-- **Export Functionality**: PDF, Excel, CSV export options
-- **Shareable Reports**: Generate shareable links for financial advisors
+3. **Transactions** (`/transactions`)
+   - Add transaction form
+   - Transaction list with filters
+   - Edit/delete functionality
 
-## 🔄 Data Import/Export
-- **Bank Statement Upload**: Automated parsing of bank statements
-- **Receipt Processing**: **CLIENT-SIDE** Camera/gallery image processing with browser-based OCR
-- **CSV Import**: Template-based bulk transaction import
-- **Data Export**: Complete data export in multiple formats
+4. **Goals** (`/goals`)
+   - Goals list
+   - Add goal form
+   - Progress tracking
 
-## 🎮 Gamification Elements
-- **Achievement System**: Unlock badges for financial milestones
-- **Streaks**: Track consecutive days of expense logging
-- **Financial Score**: Comprehensive financial health scoring
-- **Challenges**: Monthly savings or spending challenges
-- **Leaderboards**: Compare progress with friends (opt-in)
+5. **Analytics** (`/analytics`)
+   - Daily spending report
+   - Monthly reports
+   - Category breakdown
+   - Budget tracking
 
-## 🤝 Social Features (Optional)
-- **Expense Splitting**: Bill splitting with friends and family
+6. **Profile** (`/profile`)
+   - User info from Google
+   - Monthly income setting
+   - Preferred spending days
+   - Daily budget multiplier
+
+## 🔧 Technical Implementation
+- **React**: Frontend framework
+- **React Router**: Navigation
+- **Axios**: API calls
+- **Chart.js/Recharts**: Simple charts
+- **Tailwind CSS**: Styling
+- **React Hook Form**: Form handling
+- **React Query**: API state management
+
+## 📊 Daily Budget Formula
+```javascript
+// Simple calculation
+const dailyBudget = (monthlyIncome - totalGoalContributions) / daysInMonth;
+
+// Adjust for preferred spending days
+const adjustedBudget = preferredSpendingDay ? 
+  dailyBudget * dailyBudgetMultiplier : 
+  dailyBudget * (1 - (dailyBudgetMultiplier - 1) / 7);
+```
+
+## 🤖 AI Integration Points
+- **Transaction Categorization**: Send description to AI, get category from enum
+- **Daily Reports**: AI-generated daily spending insights and recommendations
+  - Analyze spending vs budget
+  - Identify patterns (overspending categories, timing)
+  - Provide actionable recommendations for tomorrow
+  - Compare with user's goals and preferred spending days
+- **Monthly Reports**: AI-generated monthly summaries
+- **Receipt OCR**: Extract amount and description from images
+
+## ✅ MVP Success Criteria
+1. ✅ Google OAuth authentication
+2. ✅ Add/edit/delete transactions
+3. ✅ List transactions with date filtering
+4. ✅ Basic charts (category breakdown, monthly trends)
+5. ✅ Goals management with progress tracking
+6. ✅ Daily budget calculation
+7. ✅ Receipt OCR (bonus feature)
+8. ✅ Responsive design
+9. ✅ Clean, professional UI
