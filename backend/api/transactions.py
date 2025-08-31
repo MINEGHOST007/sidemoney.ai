@@ -19,12 +19,19 @@ router = APIRouter(prefix="/transactions", tags=["Transactions"])
 logger = logging.getLogger(__name__)
 
 
+def parse_enum_param(value: Optional[str]) -> Optional[str]:
+    """Convert empty string to None for enum parameters"""
+    if value == "":
+        return None
+    return value
+
+
 @router.get("", response_model=TransactionList)
 async def get_transactions(
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
-    transaction_type: Optional[TransactionType] = Query(None, description="Filter by transaction type"),
-    category: Optional[ExpenseCategory] = Query(None, description="Filter by category"),
+    transaction_type: Optional[str] = Query(None, description="Filter by transaction type"),
+    category: Optional[str] = Query(None, description="Filter by category"),
     start_date: Optional[date] = Query(None, description="Start date filter"),
     end_date: Optional[date] = Query(None, description="End date filter"),
     search: Optional[str] = Query(None, description="Search in description"),
@@ -32,15 +39,37 @@ async def get_transactions(
     db: Session = Depends(get_db)
 ):
     """Get paginated list of user transactions with filters"""
+    # Parse enum parameters
+    transaction_type_enum = None
+    category_enum = None
+    
+    if transaction_type and transaction_type.strip():
+        try:
+            transaction_type_enum = TransactionType(transaction_type)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid transaction type: {transaction_type}"
+            )
+    
+    if category and category.strip():
+        try:
+            category_enum = ExpenseCategory(category)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid category: {category}"
+            )
+    
     # Build query
     query = db.query(Transaction).filter(Transaction.user_id == current_user.id)
     
     # Apply filters
-    if transaction_type:
-        query = query.filter(Transaction.type == transaction_type)
+    if transaction_type_enum:
+        query = query.filter(Transaction.type == transaction_type_enum)
     
-    if category:
-        query = query.filter(Transaction.category == category)
+    if category_enum:
+        query = query.filter(Transaction.category == category_enum)
     
     if start_date:
         query = query.filter(Transaction.date >= start_date)

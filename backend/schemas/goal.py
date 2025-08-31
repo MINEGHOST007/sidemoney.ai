@@ -11,6 +11,13 @@ class GoalBase(BaseModel):
     target_amount: Decimal = Field(..., gt=0)
     deadline: date
 
+    @field_validator('target_amount', mode='before')
+    @classmethod
+    def convert_target_amount_to_decimal(cls, v):
+        if isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
+
     @field_validator('deadline')
     @classmethod
     def validate_deadline(cls, v):
@@ -29,6 +36,13 @@ class GoalUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     target_amount: Optional[Decimal] = Field(None, gt=0)
     deadline: Optional[date] = None
+
+    @field_validator('target_amount', mode='before')
+    @classmethod
+    def convert_target_amount_to_decimal(cls, v):
+        if v is not None and isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
 
     @field_validator('deadline')
     @classmethod

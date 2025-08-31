@@ -15,6 +15,13 @@ class UserBase(BaseModel):
     daily_budget_multiplier: Optional[Decimal] = Field(default=1.0, ge=0.1, le=10.0)
     current_amount: Decimal = Field(default=0)
 
+    @field_validator('monthly_income', 'daily_budget_multiplier', 'current_amount', mode='before')
+    @classmethod
+    def convert_decimal_fields(cls, v):
+        if v is not None and isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
+
     @field_validator('preferred_spending_days')
     @classmethod
     def validate_spending_days(cls, v):
@@ -38,6 +45,13 @@ class UserUpdate(BaseModel):
     preferred_spending_days: Optional[List[str]] = None
     daily_budget_multiplier: Optional[Decimal] = Field(None, ge=0.1, le=10.0)
     current_amount: Optional[Decimal] = None
+
+    @field_validator('monthly_income', 'daily_budget_multiplier', 'current_amount', mode='before')
+    @classmethod
+    def convert_decimal_fields(cls, v):
+        if v is not None and isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
 
     @field_validator('preferred_spending_days')
     @classmethod
@@ -73,6 +87,13 @@ class UserProfile(BaseModel):
     total_goals: int
     total_transactions: int
     created_at: datetime
+
+    @field_validator('monthly_income', 'daily_budget_multiplier', 'current_amount', mode='before')
+    @classmethod
+    def convert_decimal_fields(cls, v):
+        if v is not None and isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
 
     class Config:
         from_attributes = True 

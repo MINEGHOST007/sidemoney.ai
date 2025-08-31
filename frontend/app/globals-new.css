@@ -1,0 +1,139 @@
+@import "tailwindcss";
+
+/* Base styles */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Dark theme color variables from new design */
+:root {
+  /* Original theme colors */
+  --background: #f1f5f9;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  --primary: #06b6d4;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #475569;
+  --accent: #8b5cf6;
+  --accent-foreground: #ffffff;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: rgba(30, 41, 59, 0.16);
+  --input: #ffffff;
+  --ring: rgba(6, 182, 212, 0.5);
+  --radius: 0.5rem;
+
+  /* New design color tokens */
+  --token-green-accent: rgb(0, 255, 178);
+  --token-pink-accent: rgb(255, 0, 102);
+  --token-dark-bg: rgb(8, 7, 14);
+  --token-dark-surface: rgb(23, 23, 29);
+  --token-dark-surface-light: rgb(32, 32, 38);
+  --token-white-overlay: rgba(255, 255, 255, 0.04);
+  --token-white-border: rgba(255, 255, 255, 0.1);
+}
+
+/* Animations */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(-6px) translateX(2px);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+}
+
+/* Utility classes */
+.animate-reveal {
+  animation: reveal 600ms ease-out both;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 1.5s ease-out forwards;
+}
+
+.animate-fadeInUp-delay-1 {
+  animation: fadeInUp 1.5s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fadeInUp-delay-2 {
+  animation: fadeInUp 1.5s ease-out 0.4s forwards;
+  opacity: 0;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Gradient text effects */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.7));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Override body background for dark theme */
+body {
+  background: var(--token-dark-bg, rgb(8, 7, 14));
+  color: white;
+}

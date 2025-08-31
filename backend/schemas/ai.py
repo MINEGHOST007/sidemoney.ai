@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Dict, Any
 from decimal import Decimal
 from datetime import date as Date
@@ -32,6 +32,13 @@ class FinancialRecommendation(BaseModel):
     action_items: List[str] = Field(default_factory=list, description="Specific action steps")
     category_focus: Optional[ExpenseCategory] = Field(None, description="Related expense category if applicable")
 
+    @field_validator('potential_savings', mode='before')
+    @classmethod
+    def convert_potential_savings_to_decimal(cls, v):
+        if v is not None and isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
+
 
 class SpendingInsight(BaseModel):
     """Structured spending insight"""
@@ -61,6 +68,13 @@ class OCRTransactionItem(BaseModel):
     merchant: Optional[str] = Field(None, description="Merchant name if identifiable")
     confidence: float = Field(..., ge=0, le=1, description="OCR extraction confidence")
 
+    @field_validator('amount', mode='before')
+    @classmethod
+    def convert_amount_to_decimal(cls, v):
+        if isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
+
 
 class OCRResult(BaseModel):
     """OCR processing result"""
@@ -70,6 +84,13 @@ class OCRResult(BaseModel):
     processing_confidence: float = Field(..., ge=0, le=1, description="Overall processing confidence")
     raw_text: Optional[str] = Field(None, description="Raw extracted text for review")
     warnings: List[str] = Field(default_factory=list, description="Processing warnings or issues")
+
+    @field_validator('total_amount', mode='before')
+    @classmethod
+    def convert_total_amount_to_decimal(cls, v):
+        if isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
 
 
 class BulkTransactionCreate(BaseModel):

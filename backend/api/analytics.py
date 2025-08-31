@@ -35,9 +35,18 @@ async def get_daily_budget(
         # Add money needed per day calculation
         money_needed_info = BudgetCalculator.calculate_money_needed_per_day(current_user, active_goals)
         
+        # Add goal information
+        active_goals_count = len(active_goals)
+        days_until_earliest_goal = None
+        if active_goals:
+            earliest_goal = min(active_goals, key=lambda g: g.deadline)
+            days_until_earliest_goal = (earliest_goal.deadline - date.today()).days
+        
         return {
             **budget_info,
-            **money_needed_info
+            **money_needed_info,
+            "active_goals_count": active_goals_count,
+            "days_until_earliest_goal": days_until_earliest_goal
         }
         
     except Exception as e:

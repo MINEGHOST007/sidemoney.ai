@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, List
+from typing import Optional, List, Union
 from decimal import Decimal
 from datetime import datetime, date
 import uuid
@@ -14,12 +14,20 @@ class TransactionBase(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
     date: date
 
+    @field_validator('amount', mode='before')
+    @classmethod
+    def convert_amount_to_decimal(cls, v):
+        if isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
+
     @field_validator('category')
     @classmethod
     def validate_category(cls, v, info):
-        if info.data.get('type') == TransactionType.EXPENSE and v is None:
+        transaction_type = info.data.get('type')
+        if transaction_type == TransactionType.EXPENSE.value and v is None:
             raise ValueError('Category is required for expense transactions')
-        elif info.data.get('type') == TransactionType.INCOME and v is not None:
+        elif transaction_type == TransactionType.INCOME.value and v is not None:
             raise ValueError('Category should not be set for income transactions')
         return v
 
@@ -37,12 +45,20 @@ class TransactionUpdate(BaseModel):
     description: Optional[str] = Field(None, max_length=500)
     date: Optional[date] = None
 
+    @field_validator('amount', mode='before')
+    @classmethod
+    def convert_amount_to_decimal(cls, v):
+        if v is not None and isinstance(v, (int, float)):
+            return Decimal(str(v))
+        return v
+
     @field_validator('category')
     @classmethod
     def validate_category(cls, v, info):
-        if info.data.get('type') == TransactionType.EXPENSE and v is None:
+        transaction_type = info.data.get('type')
+        if transaction_type == TransactionType.EXPENSE.value and v is None:
             raise ValueError('Category is required for expense transactions')
-        elif info.data.get('type') == TransactionType.INCOME and v is not None:
+        elif transaction_type == TransactionType.INCOME.value and v is not None:
             raise ValueError('Category should not be set for income transactions')
         return v
 

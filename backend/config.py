@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     
     # Google OAuth
     google_client_id: str = Field(default="", env="GOOGLE_CLIENT_ID")
+    google_client_secret: str = Field(default="", env="GOOGLE_CLIENT_SECRET")
     
     # Google Generative AI (Gemini)
     gemini_api_key: str = Field(default="", env="GEMINI_API_KEY")
@@ -36,7 +37,7 @@ class Settings(BaseSettings):
     
     # CORS
     allowed_origins: List[str] = Field(
-        default=["http://localhost:3000", "http://127.0.0.1:3000"],
+        default=["*"],
         env="ALLOWED_ORIGINS"
     )
     
@@ -59,9 +60,9 @@ class Settings(BaseSettings):
         
         @classmethod
         def parse_env_var(cls, field_name: str, raw_val: str):
-            if field_name in ('allowed_origins', 'allowed_hosts'):
+            if field_name == 'allowed_hosts':
                 return raw_val.split(',') if raw_val else []
-            return cls.json_loads(raw_val)
+            return raw_val
 
 
 # Global settings instance

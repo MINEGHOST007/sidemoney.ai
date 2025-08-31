@@ -1,0 +1,274 @@
+@import "tailwindcss";
+
+/* DM Sans Font Variables */
+:root {
+  --font-dm-sans: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Base styles */
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-dm-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Font family utilities */
+.font-dm-sans { font-family: var(--font-dm-sans); }
+
+/* Typography Scale with consistent line heights */
+.text-xs { font-size: 0.75rem; line-height: 1rem; }
+.text-sm { font-size: 0.875rem; line-height: 1.25rem; }
+.text-base { font-size: 1rem; line-height: 1.5rem; }
+.text-lg { font-size: 1.125rem; line-height: 1.75rem; }
+.text-xl { font-size: 1.25rem; line-height: 1.75rem; }
+.text-2xl { font-size: 1.5rem; line-height: 2rem; }
+.text-3xl { font-size: 1.875rem; line-height: 2.25rem; }
+.text-4xl { font-size: 2.25rem; line-height: 2.5rem; }
+.text-5xl { font-size: 3rem; line-height: 1.1; }
+.text-6xl { font-size: 3.75rem; line-height: 1; }
+.text-7xl { font-size: 4.5rem; line-height: 1; }
+.text-8xl { font-size: 6rem; line-height: 1; }
+
+/* Font weights */
+.font-light { font-weight: 300; }
+.font-normal { font-weight: 400; }
+.font-medium { font-weight: 500; }
+.font-semibold { font-weight: 600; }
+.font-bold { font-weight: 700; }
+.font-extrabold { font-weight: 800; }
+
+/* Letter spacing */
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-normal { letter-spacing: 0em; }
+.tracking-wide { letter-spacing: 0.025em; }
+
+/* Dark theme color variables from new design */
+:root {
+  /* Dark theme colors for components */
+  --background: rgb(8, 7, 14);
+  --foreground: rgb(255, 255, 255);
+  --card: rgba(255, 255, 255, 0.04);
+  --card-foreground: rgb(255, 255, 255);
+  --popover: rgb(8, 7, 14);
+  --popover-foreground: rgb(255, 255, 255);
+  --primary: rgb(0, 255, 178);
+  --primary-foreground: rgb(0, 0, 0);
+  --secondary: rgba(255, 255, 255, 0.08);
+  --secondary-foreground: rgb(255, 255, 255);
+  --muted: rgba(255, 255, 255, 0.04);
+  --muted-foreground: rgba(255, 255, 255, 0.6);
+  --accent: rgb(0, 255, 178);
+  --accent-foreground: rgb(0, 0, 0);
+  --destructive: rgb(239, 68, 68);
+  --destructive-foreground: rgb(255, 255, 255);
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.05);
+  --ring: rgba(0, 255, 178, 0.5);
+  --radius: 0.75rem;
+
+  /* Design token colors */
+  --token-green-accent: rgb(0, 255, 178);
+  --token-pink-accent: rgb(255, 0, 102);
+  --token-dark-bg: rgb(8, 7, 14);
+  --token-dark-surface: rgb(23, 23, 29);
+  --token-dark-surface-light: rgb(32, 32, 38);
+  --token-white-overlay: rgba(255, 255, 255, 0.04);
+  --token-white-border: rgba(255, 255, 255, 0.1);
+}
+
+/* Animations */
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px) translateX(0px);
+  }
+  50% {
+    transform: translateY(-6px) translateX(2px);
+  }
+  100% {
+    transform: translateY(0px) translateX(0px);
+  }
+}
+
+/* Utility classes */
+.animate-reveal {
+  animation: reveal 600ms ease-out both;
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 1.5s ease-out forwards;
+}
+
+.animate-fadeInUp-delay-1 {
+  animation: fadeInUp 1.5s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fadeInUp-delay-2 {
+  animation: fadeInUp 1.5s ease-out 0.4s forwards;
+  opacity: 0;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* Gradient text effects */
+.gradient-text {
+  background: linear-gradient(135deg, #ffffff, rgba(255, 255, 255, 0.7));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Override body background for dark theme */
+body {
+  background: var(--token-dark-bg, rgb(8, 7, 14));
+  color: white;
+}
+
+/* Dark Theme Table Overrides */
+[data-slot="table-header"] {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-slot="table-head"] {
+  background: transparent !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-slot="table-row"]:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-slot="table-row"] {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-slot="table-cell"] {
+  color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Dark theme form inputs */
+.dark-input {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.dark-input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.dark-input:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark-input:focus {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgb(0, 255, 178);
+  box-shadow: 0 0 0 2px rgba(0, 255, 178, 0.2);
+}
+
+/* Google Sign-In Button Custom Styling */
+#google-btn-container {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#google-btn-container > div {
+  width: 100% !important;
+  min-height: 48px !important;
+}
+
+#google-btn-container iframe {
+  width: 100% !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+}
+
+/* Style the Google button to match our theme */
+#google-btn-container div[role="button"] {
+  width: 100% !important;
+  background: rgb(0,255,178) !important;
+  color: black !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  font-size: 16px !important;
+  padding: 12px 24px !important;
+  box-shadow: 0 4px 12px rgba(0,255,178,0.3) !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+}
+
+#google-btn-container div[role="button"]:hover {
+  background: rgba(0,255,178,0.9) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 25px rgba(0,255,178,0.4) !important;
+}
+
+/* Ensure the button text is visible */
+#google-btn-container div[role="button"] * {
+  color: black !important;
+  font-weight: 600 !important;
+}
+
+/* Force visibility for any nested elements */
+#google-btn-container [data-idom-class] {
+  background: rgb(0,255,178) !important;
+  color: black !important;
+}
