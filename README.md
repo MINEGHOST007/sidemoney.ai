@@ -1,4 +1,3 @@
-````markdown
 <div align="center">
   
 # SideMoney.ai
@@ -12,11 +11,15 @@ Spend smarter. Save faster.
 [![Next.js](https://img.shields.io/badge/Next.js-14.2.16-000000.svg)](https://nextjs.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com)
 
+Live Demo • Documentation • Report Bug • Request Feature
+
 </div>
 
 ---
 
-## Demo Screenshots### Landing Page
+## Demo Screenshots
+
+### Landing Page
 
 ![Landing Page](./docs/screenshots/landing-page.png)
 Clean, modern landing page with feature highlights
@@ -415,47 +418,6 @@ We welcome contributions! Here's how you can help:
 If you found this project helpful, please consider giving it a star!
 
 </div>
-````
 
-## 🐛 Known Issues
-
-- OCR accuracy may vary with image quality
-- Large transaction datasets may have slower load times
-- Mobile responsiveness is optimized for modern devices
-
----
-
-## 📞 Support
-
-- **Documentation**: Check our [Wiki](#) for detailed guides
-- **Issues**: Report bugs in our [Issue Tracker](#)
-- **Discussions**: Join our [Community Discussions](#)
-- **Email**: support@sidemoney.ai
-
----
-
-## Acknowledgments
-
-- **Google Generative AI** for powering our AI features
-- **OpenAI** for inspiration and AI development patterns
-- **Vercel** for excellent Next.js documentation
-- **FastAPI** community for the amazing framework
-- **shadcn/ui** for beautiful UI components
-
----
-
-## 📈 Project Stats
-
-![GitHub stars](https://img.shields.io/github/stars/MINEGHOST007/sidemoney.ai?style=social)
-![GitHub forks](https://img.shields.io/github/forks/MINEGHOST007/sidemoney.ai?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/MINEGHOST007/sidemoney.ai?style=social)
-
----
-
-<div align="center">
-
-**Built with ❤️ by [MINEGHOST007](https://github.com/MINEGHOST007)**
-
-_If you found this project helpful, please consider giving it a ⭐!_
 
 </div>
