@@ -4,7 +4,7 @@ from sqlalchemy import func
 
 from database import get_db
 from models.user import User
-from models.transaction import Transaction
+from models.transaction import Transaction, TransactionType
 from models.goal import Goal
 from schemas.user import UserUpdate, UserResponse, UserProfile
 from api.auth import get_current_user
@@ -66,4 +66,50 @@ async def update_user_profile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update profile: {str(e)}"
+        )
+
+
+@router.post("/recalculate-balance")
+async def recalculate_user_balance(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Recalculate user's current balance from transaction history"""
+    try:
+        # Get all transactions for the user
+        transactions = db.query(Transaction).filter(Transaction.user_id == current_user.id).all()
+        
+        # Calculate balance from all transactions
+        # Start with the initial amount (you might want to track this separately)
+        # For now, we'll assume the user started with 0 and calculate from transactions
+        calculated_balance = 0
+        
+        for transaction in transactions:
+            if transaction.type == TransactionType.INCOME:
+                calculated_balance += float(transaction.amount)
+            else:  # EXPENSE
+                calculated_balance -= float(transaction.amount)
+        
+        # Store the old balance for comparison
+        old_balance = float(current_user.current_amount)
+        
+        # Update the user's current amount
+        current_user.current_amount = calculated_balance
+        
+        db.commit()
+        db.refresh(current_user)
+        
+        return {
+            "message": "Balance recalculated successfully",
+            "old_balance": old_balance,
+            "new_balance": calculated_balance,
+            "difference": calculated_balance - old_balance,
+            "total_transactions": len(transactions)
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to recalculate balance: {str(e)}"
         ) 

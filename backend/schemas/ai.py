@@ -64,6 +64,7 @@ class OCRTransactionItem(BaseModel):
     description: str = Field(..., description="Transaction description")
     amount: Decimal = Field(..., gt=0, description="Transaction amount")
     date: Date = Field(..., description="Transaction date")
+    type: TransactionType = Field(default=TransactionType.EXPENSE, description="Transaction type (income or expense)")
     category: Optional[ExpenseCategory] = Field(None, description="Auto-categorized expense category")
     merchant: Optional[str] = Field(None, description="Merchant name if identifiable")
     confidence: float = Field(..., ge=0, le=1, description="OCR extraction confidence")

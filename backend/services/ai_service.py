@@ -28,6 +28,33 @@ logger = logging.getLogger(__name__)
 class AIService:
     """Enhanced AI service using Gemini LLM for financial analysis and OCR"""
     
+    # Simple rate limiting - track daily API calls
+    _daily_api_calls = 0
+    _last_reset_date = date.today()
+    _max_daily_calls = 40  # Stay under the 50 limit
+    
+    @classmethod
+    def _can_make_api_call(cls) -> bool:
+        """Check if we can make another API call today"""
+        today = date.today()
+        
+        # Reset counter if it's a new day
+        if today > cls._last_reset_date:
+            cls._daily_api_calls = 0
+            cls._last_reset_date = today
+        
+        # Check if we're under the limit
+        if cls._daily_api_calls >= cls._max_daily_calls:
+            logger.warning(f"Daily Gemini API limit reached ({cls._max_daily_calls}), using fallback methods")
+            return False
+        
+        return True
+    
+    @classmethod
+    def _record_api_call(cls):
+        """Record that we made an API call"""
+        cls._daily_api_calls += 1
+    
     # Keywords mapping for fallback categorization
     CATEGORY_KEYWORDS = {
         ExpenseCategory.FOOD_DINING: [
@@ -101,6 +128,11 @@ class AIService:
         if not description:
             return ExpenseCategory.MISCELLANEOUS
         
+        # Check if we can make API call
+        if not cls._can_make_api_call():
+            logger.info("Using fallback categorization due to rate limiting")
+            return cls._fallback_categorize_transaction(description)
+        
         # Try Gemini categorization first
         try:
             model = cls._get_gemini_model()
@@ -117,6 +149,7 @@ class AIService:
                 """
                 
                 response = model.generate_content(prompt)
+                cls._record_api_call()  # Record successful API call
                 category_name = response.text.strip().upper()
                 
                 # Validate response
@@ -382,6 +415,17 @@ class AIService:
         """Process receipt/document using Gemini Vision for OCR and transaction extraction"""
         
         try:
+            if not cls._can_make_api_call():
+                return OCRResult(
+                    transactions=[],
+                    total_amount=Decimal('0'),
+                    document_type="unknown",
+                    processing_confidence=0.0,
+                    raw_text="Daily API limit reached",
+                    warnings=["Daily API limit reached, please try again later"]
+                )
+                
+            cls._record_api_call()
             model = genai.GenerativeModel('gemini-1.5-flash')
             
             # Convert image data to PIL Image
@@ -391,14 +435,25 @@ class AIService:
             prompt = cls._create_ocr_prompt()
             
             response = model.generate_content([prompt, image])
+            response_text = response.text.strip()
+            
+            logger.info(f"Raw OCR response: {response_text[:500]}...")  # Log first 500 chars
+            
+            # Clean the response text - remove markdown formatting if present
+            if response_text.startswith("```json"):
+                response_text = response_text.replace("```json", "").replace("```", "").strip()
+            elif response_text.startswith("```"):
+                response_text = response_text.replace("```", "").strip()
             
             # Parse the response
             try:
-                ocr_data = json.loads(response.text)
-                return cls._validate_ocr_result(ocr_data, response.text)
-            except json.JSONDecodeError:
+                ocr_data = json.loads(response_text)
+                logger.info(f"Successfully parsed OCR JSON data")
+                return cls._validate_ocr_result(ocr_data, response_text)
+            except json.JSONDecodeError as e:
+                logger.warning(f"JSON parsing failed: {e}, attempting fallback parsing")
                 # Try to extract structured data from text response
-                return cls._parse_ocr_text_response(response.text)
+                return cls._parse_ocr_text_response(response_text)
                 
         except Exception as e:
             logger.error(f"OCR processing failed: {e}")
@@ -418,127 +473,261 @@ class AIService:
         categories = ', '.join([cat.value for cat in ExpenseCategory])
         
         return f"""
-        You are an expert OCR system specialized in extracting financial transaction data from receipts, bank statements, and financial documents.
+IMPORTANT: You are an expert OCR system. Analyze the receipt/document image and extract transaction data. Return ONLY valid JSON - no markdown, no explanations, no code blocks.
 
-        **TASK:** Extract all transaction information from this image and return structured JSON data.
+TASK: Extract structured transaction data from this financial document.
 
-        **EXPECTED DOCUMENT TYPES:**
-        - Receipts (store, restaurant, gas station, etc.)
-        - Bank statements
-        - Credit card statements
-        - Invoice documents
-        - Expense reports
+EXTRACTION RULES:
+1. READ the image carefully - identify all line items with descriptions and amounts
+2. For retail receipts: Extract each product/service line item separately
+3. Match each description with its corresponding price
+4. Extract the correct transaction date from the document (look for date stamps)
+5. Categorize items appropriately from: {categories}
+6. Identify any merchant/store name from headers or footers
+7. Calculate or use the provided total amount
 
-        **EXTRACTION RULES:**
-        1. Extract ALL transactions/line items visible
-        2. For receipts: extract individual items if detailed, or total if summary
-        3. For statements: extract each transaction line
-        4. Automatically categorize using these categories: {categories}
-        5. Extract dates in YYYY-MM-DD format
-        6. Extract amounts as positive decimal numbers
-        7. Identify merchant/vendor names when possible
-        8. Provide confidence scores for each extraction
+RECEIPT PARSING PRIORITY:
+- Line items (products/services) with individual prices
+- Transaction date (usually at top or bottom)
+- Merchant name (store/business name)
+- Total amount
+- Payment method if visible
 
-        **OUTPUT FORMAT (JSON only):**
-        {{
-            "transactions": [
-                {{
-                    "description": "Item or transaction description",
-                    "amount": 15.99,
-                    "date": "2024-01-15",
-                    "category": "FOOD_DINING",
-                    "merchant": "Starbucks",
-                    "confidence": 0.95
-                }}
-            ],
-            "total_amount": 45.97,
-            "document_type": "receipt|bank_statement|credit_statement|invoice|other",
-            "processing_confidence": 0.88,
-            "raw_text": "Complete extracted text for reference",
-            "warnings": ["Any issues or uncertainties"]
-        }}
+JSON STRUCTURE (return exactly this format):
+{{
+  "transactions": [
+    {{
+      "description": "Product or service name (clean, readable)",
+      "amount": 25.50,
+      "date": "2024-01-15",
+      "category": "SHOPPING",
+      "merchant": "Store Name",
+      "confidence": 0.95
+    }}
+  ],
+  "total_amount": 363.99,
+  "document_type": "receipt",
+  "processing_confidence": 0.95,
+  "raw_text": "All extracted text from document",
+  "warnings": []
+}}
 
-        **GUIDELINES:**
-        - If amount is unclear, estimate based on context
-        - If date is missing, use today's date with low confidence
-        - If category is uncertain, use MISCELLANEOUS
-        - Include tax, tips, and fees as separate line items when detailed
-        - For unclear text, note in warnings but still attempt extraction
-        - Confidence should reflect OCR clarity and data certainty
+CATEGORIES (use exact values):
+- SHOPPING: Clothing, electronics, general retail
+- FOOD_DINING: Restaurants, fast food, cafes
+- GROCERIES: Supermarkets, food stores
+- TRANSPORTATION: Gas, parking, rideshare
+- ENTERTAINMENT: Movies, games, subscriptions
+- BILLS_UTILITIES: Phone, internet, electricity
+- HEALTHCARE: Medical, pharmacy, dental
+- MISCELLANEOUS: When category unclear
 
-        **RESPOND WITH ONLY THE JSON OBJECT, NO ADDITIONAL TEXT.**
-        """
+CRITICAL INSTRUCTIONS:
+- Return ONLY the JSON object
+- No ```json``` markdown formatting
+- No additional text before or after JSON
+- Ensure all JSON syntax is correct
+- Use double quotes for all strings
+- Include decimal amounts (e.g., 25.50, not 25.5)
+- Date format: YYYY-MM-DD
+- If date unclear, use document date or current date
+
+EXAMPLE VALID RESPONSE:
+{{"transactions":[{{"description":"T-Shirt","amount":25.50,"date":"2024-01-15","category":"SHOPPING","merchant":"Retail Store","confidence":0.95}}],"total_amount":25.50,"document_type":"receipt","processing_confidence":0.95,"raw_text":"Receipt content","warnings":[]}}
+"""
 
     @classmethod
     def _validate_ocr_result(cls, ocr_data: dict, raw_text: str) -> OCRResult:
-        """Validate and structure OCR result"""
+        """Validate and structure OCR result with enhanced error handling"""
         
         transactions = []
         total_amount = Decimal('0')
+        warnings = []
         
-        for item in ocr_data.get('transactions', []):
+        # Validate transactions list
+        transactions_data = ocr_data.get('transactions', [])
+        if not isinstance(transactions_data, list):
+            warnings.append("Invalid transactions format, expected list")
+            transactions_data = []
+        
+        for idx, item in enumerate(transactions_data):
             try:
-                # Validate and create transaction item
+                # Handle string amounts that might contain JSON artifacts
+                raw_amount = item.get('amount', 0)
+                if isinstance(raw_amount, str):
+                    # Clean up string amounts that might have JSON formatting
+                    raw_amount = re.sub(r'[^\d.]', '', raw_amount)
+                    if not raw_amount:
+                        raw_amount = '0'
+                
+                amount = Decimal(str(raw_amount))
+                
+                # Handle date parsing
+                date_str = item.get('date', str(date.today()))
+                try:
+                    parsed_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+                except:
+                    try:
+                        # Try alternative date formats
+                        parsed_date = datetime.strptime(date_str, '%m-%d-%Y').date()
+                    except:
+                        parsed_date = date.today()
+                        warnings.append(f"Invalid date format in transaction {idx + 1}, using today's date")
+                
+                # Handle category validation
+                category_str = item.get('category', 'MISCELLANEOUS')
+                try:
+                    category = ExpenseCategory(category_str)
+                except ValueError:
+                    category = ExpenseCategory.MISCELLANEOUS
+                    warnings.append(f"Invalid category '{category_str}' in transaction {idx + 1}, using MISCELLANEOUS")
+                
+                # Create transaction item
                 transaction = OCRTransactionItem(
-                    description=item.get('description', 'Unknown transaction'),
-                    amount=Decimal(str(item.get('amount', 0))),
-                    date=datetime.strptime(item.get('date', str(date.today())), '%Y-%m-%d').date(),
-                    category=ExpenseCategory(item.get('category', 'MISCELLANEOUS')),
+                    description=str(item.get('description', 'Unknown transaction'))[:200],  # Limit description length
+                    amount=amount,
+                    date=parsed_date,
+                    category=category,
                     merchant=item.get('merchant'),
-                    confidence=float(item.get('confidence', 0.5))
+                    confidence=min(1.0, max(0.0, float(item.get('confidence', 0.5))))  # Clamp confidence between 0 and 1
                 )
                 transactions.append(transaction)
                 total_amount += transaction.amount
+                
             except Exception as e:
-                logger.warning(f"Failed to parse OCR transaction item: {e}")
+                warnings.append(f"Failed to parse transaction {idx + 1}: {str(e)}")
+                logger.warning(f"Failed to parse OCR transaction item {idx}: {e}")
                 continue
+        
+        # Validate total amount
+        provided_total = ocr_data.get('total_amount', 0)
+        try:
+            provided_total_decimal = Decimal(str(provided_total))
+            # Use provided total if it seems reasonable
+            if abs(provided_total_decimal - total_amount) / max(provided_total_decimal, total_amount, Decimal('1')) < 0.1:
+                total_amount = provided_total_decimal
+            elif provided_total_decimal > 0:
+                warnings.append(f"Total amount mismatch: calculated {total_amount}, provided {provided_total_decimal}")
+        except:
+            warnings.append("Invalid total amount format")
+        
+        # Combine warnings
+        existing_warnings = ocr_data.get('warnings', [])
+        if isinstance(existing_warnings, list):
+            warnings.extend(existing_warnings)
         
         return OCRResult(
             transactions=transactions,
             total_amount=total_amount,
             document_type=ocr_data.get('document_type', 'unknown'),
-            processing_confidence=float(ocr_data.get('processing_confidence', 0.5)),
+            processing_confidence=min(1.0, max(0.0, float(ocr_data.get('processing_confidence', 0.5)))),
             raw_text=raw_text,
-            warnings=ocr_data.get('warnings', [])
+            warnings=warnings
         )
 
     @classmethod
     def _parse_ocr_text_response(cls, text: str) -> OCRResult:
-        """Parse OCR response when JSON parsing fails"""
+        """Parse OCR response when JSON parsing fails - improved fallback"""
         
-        # Basic text parsing fallback
-        lines = text.split('\n')
+        logger.info(f"Attempting fallback text parsing on: {text[:200]}...")
+        
+        # Try to find JSON-like structure in the text
+        import re
+        
+        # Look for potential JSON structures
+        json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+        json_matches = re.findall(json_pattern, text, re.DOTALL)
+        
+        for match in json_matches:
+            try:
+                ocr_data = json.loads(match)
+                if 'transactions' in ocr_data:
+                    logger.info("Found valid JSON structure in text")
+                    return cls._validate_ocr_result(ocr_data, text)
+            except:
+                continue
+        
+        # If no JSON found, try to extract key information patterns
         transactions = []
         
-        # Simple pattern matching for amounts
-        import re
-        amount_pattern = r'\$?(\d+\.?\d*)'
+        # Pattern for receipt items: description + amount
+        item_patterns = [
+            r'(\d+)\s*x\s*([^$\n]+)\s*\$?(\d+\.?\d*)',  # "1 x T-Shirt $25.50"
+            r'([^$\n]+)\s*\$(\d+\.?\d*)',  # "T-Shirt $25.50"
+            r'"([^"]+)"\s*[,:]\s*(\d+\.?\d*)',  # "T-Shirt": 25.50
+        ]
         
-        for line in lines:
-            amounts = re.findall(amount_pattern, line)
-            if amounts and line.strip():
+        # Extract date if possible
+        date_pattern = r'(\d{2}[-/]\d{2}[-/]\d{4})'
+        date_matches = re.findall(date_pattern, text)
+        extracted_date = date.today()
+        
+        if date_matches:
+            try:
+                # Convert date format
+                date_str = date_matches[0].replace('-', '/').replace('/', '-')
+                if len(date_str.split('-')[2]) == 4:  # YYYY format
+                    extracted_date = datetime.strptime(date_str, '%m-%d-%Y').date()
+                else:  # YY format  
+                    year = int('20' + date_str.split('-')[2])
+                    month, day = date_str.split('-')[0], date_str.split('-')[1]
+                    extracted_date = datetime(year, int(month), int(day)).date()
+            except:
+                pass
+        
+        # Try each pattern
+        for pattern in item_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match in matches:
                 try:
-                    amount = Decimal(amounts[-1])  # Take the last amount found
+                    if len(match) == 3:  # quantity, description, amount
+                        quantity, description, amount_str = match
+                        description = f"{quantity} x {description.strip()}"
+                        amount = Decimal(amount_str)
+                    else:  # description, amount
+                        description, amount_str = match
+                        description = description.strip()
+                        amount = Decimal(amount_str)
+                    
                     if amount > 0:
                         transactions.append(OCRTransactionItem(
-                            description=line.strip()[:100],
+                            description=description[:100],
                             amount=amount,
-                            date=date.today(),
-                            category=cls._fallback_categorize_transaction(line),
-                            confidence=0.3
+                            date=extracted_date,
+                            category=cls._fallback_categorize_transaction(description),
+                            confidence=0.6
                         ))
-                except:
+                except Exception as e:
+                    logger.debug(f"Failed to parse match {match}: {e}")
                     continue
         
-        total_amount = sum(t.amount for t in transactions)
+        # If still no transactions found, try simple amount extraction
+        if not transactions:
+            amount_pattern = r'\$?(\d+\.?\d{2})'
+            amounts = re.findall(amount_pattern, text)
+            
+            # Look for the largest amount as likely total
+            if amounts:
+                amounts = [Decimal(a) for a in amounts if Decimal(a) > 0]
+                if amounts:
+                    max_amount = max(amounts)
+                    transactions.append(OCRTransactionItem(
+                        description="Receipt transaction",
+                        amount=max_amount,
+                        date=extracted_date,
+                        category=ExpenseCategory.MISCELLANEOUS,
+                        confidence=0.4
+                    ))
+        
+        total_amount = sum(t.amount for t in transactions) if transactions else Decimal('0')
         
         return OCRResult(
             transactions=transactions,
             total_amount=total_amount,
-            document_type="unknown",
-            processing_confidence=0.3,
+            document_type="receipt" if transactions else "unknown",
+            processing_confidence=0.6 if transactions else 0.3,
             raw_text=text,
-            warnings=["Failed to parse structured data, used text parsing fallback"]
+            warnings=["Failed to parse structured data, used enhanced text parsing fallback"]
         )
 
     @classmethod

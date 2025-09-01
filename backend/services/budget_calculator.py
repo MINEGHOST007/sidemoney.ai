@@ -21,47 +21,75 @@ class BudgetCalculator:
         if not current_date:
             current_date = date.today()
         
-        # Get days remaining in current month
-        days_in_month = calendar.monthrange(current_date.year, current_date.month)[1]
-        day_of_month = current_date.day
-        days_remaining_in_month = days_in_month - day_of_month + 1
-        
-        # Calculate total amount still needed for goals
-        total_goal_shortfall = Decimal(0)
-        for goal in active_goals:
-            if goal.deadline >= current_date:
-                # Consider current amount when calculating goal shortfall
-                goal_shortfall = max(Decimal(0), goal.target_amount - user.current_amount)
-                days_until_deadline = (goal.deadline - current_date).days
-                if days_until_deadline > 0:
-                    # Distribute shortfall over remaining time
-                    months_remaining = max(1, days_until_deadline // 30 + 1)
-                    monthly_contribution = goal_shortfall / months_remaining
-                    total_goal_shortfall += monthly_contribution
-        
-        # Calculate available spending money considering current amount
+        # Get basic info
         monthly_income = user.monthly_income or Decimal(0)
         current_amount = user.current_amount or Decimal(0)
         
-        # Available for spending = income - goal contributions
-        available_for_spending = monthly_income - total_goal_shortfall
-        
-        # Calculate base daily budget for remaining days in month
-        daily_budget = available_for_spending / days_remaining_in_month if days_remaining_in_month > 0 else Decimal(0)
+        if not active_goals:
+            # No goals - can spend entire monthly income
+            days_in_month = calendar.monthrange(current_date.year, current_date.month)[1]
+            day_of_month = current_date.day
+            days_remaining_in_month = days_in_month - day_of_month + 1
+            daily_budget = monthly_income / days_remaining_in_month if days_remaining_in_month > 0 else Decimal(0)
+        else:
+            # Find the earliest goal deadline to plan until that date
+            earliest_deadline = min(goal.deadline for goal in active_goals if goal.deadline >= current_date)
+            days_until_deadline = (earliest_deadline - current_date).days + 1  # Include today
+            
+            # Calculate total money available by deadline
+            # Income payments: Get payment on 1st of each month
+            months_until_deadline = 0
+            temp_date = current_date
+            while temp_date <= earliest_deadline:
+                if temp_date.day == 1 or temp_date == current_date:  # Payment day or today
+                    months_until_deadline += 1
+                # Move to next month's 1st
+                if temp_date.month == 12:
+                    temp_date = temp_date.replace(year=temp_date.year + 1, month=1, day=1)
+                else:
+                    temp_date = temp_date.replace(month=temp_date.month + 1, day=1)
+                    
+            total_income_by_deadline = monthly_income * months_until_deadline
+            total_available = current_amount + total_income_by_deadline
+            
+            # Calculate total needed for all active goals
+            total_goals_amount = sum(goal.target_amount for goal in active_goals if goal.deadline >= current_date)
+            
+            # Calculate available for spending
+            available_for_spending = total_available - total_goals_amount
+            
+            # Distribute across all days until deadline
+            daily_budget = available_for_spending / days_until_deadline if days_until_deadline > 0 else Decimal(0)
         
         # Apply multiplier for preferred spending days
         multiplier = user.daily_budget_multiplier or Decimal(1.0)
-        adjusted_daily_budget = daily_budget * multiplier
+        
+        # Check if today is a preferred spending day
+        today_name = current_date.strftime("%A")  # Gets day name like "Monday", "Tuesday", etc.
+        preferred_days = user.preferred_spending_days or []
+        is_preferred_day = today_name in preferred_days
+        
+        if is_preferred_day:
+            # On preferred days: higher budget
+            adjusted_daily_budget = daily_budget * multiplier
+        else:
+            # On non-preferred days: reduced budget to compensate
+            # Formula: dailyBudget * (1 - (multiplier - 1) / 7)
+            adjusted_daily_budget = daily_budget * (Decimal(1) - (multiplier - Decimal(1)) / Decimal(7))
         
         return {
             "daily_budget": float(daily_budget),
             "daily_budget_with_multiplier": float(adjusted_daily_budget),
             "monthly_income": float(monthly_income),
-            "goal_contributions": float(total_goal_shortfall),
-            "available_for_spending": float(available_for_spending),
+            "goal_contributions": float(total_goals_amount) if active_goals else 0,
+            "available_for_spending": float(available_for_spending) if active_goals else float(monthly_income),
             "current_amount": float(current_amount),
-            "days_remaining_in_month": days_remaining_in_month,
-            "days_in_month": days_in_month
+            "days_remaining_in_month": calendar.monthrange(current_date.year, current_date.month)[1] - current_date.day + 1,
+            "days_in_month": calendar.monthrange(current_date.year, current_date.month)[1],
+            "is_preferred_day": is_preferred_day,
+            "multiplier": float(multiplier),
+            "days_until_deadline": days_until_deadline if active_goals else 0,
+            "total_available_by_deadline": float(total_available) if active_goals else float(current_amount)
         }
     
     @staticmethod

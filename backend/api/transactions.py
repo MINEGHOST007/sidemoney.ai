@@ -272,11 +272,17 @@ async def create_bulk_transactions(
                 transaction = Transaction(
                     user_id=current_user.id,
                     amount=ocr_transaction.amount,
-                    type=TransactionType.EXPENSE,  # OCR typically processes expenses
-                    category=ocr_transaction.category or ExpenseCategory.MISCELLANEOUS,
+                    type=ocr_transaction.type,  # Use the type from the request
+                    category=ocr_transaction.category or ExpenseCategory.MISCELLANEOUS if ocr_transaction.type == TransactionType.EXPENSE else None,
                     description=ocr_transaction.description,
                     date=ocr_transaction.date
                 )
+                
+                # Update user's current amount
+                if transaction.type == TransactionType.INCOME:
+                    current_user.current_amount += transaction.amount
+                else:  # EXPENSE
+                    current_user.current_amount -= transaction.amount
                 
                 db.add(transaction)
                 db.flush()  # Get ID without committing
