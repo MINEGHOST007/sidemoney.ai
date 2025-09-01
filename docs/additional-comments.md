@@ -3,6 +3,7 @@
 **sidemoney.ai - AI-Powered Personal Finance Assistant**
 
 **Key Features Implemented:**
+
 - Complete income/expense transaction management with web interface
 - Time-range filtering for transaction listings
 - Interactive charts and analytics (expenses by category, date trends, spending patterns)
@@ -24,6 +25,7 @@ Authentication: JWT tokens with Google OAuth integration
 **How to Run the Application (2 Methods):**
 
 **Method 1 - Docker (Recommended):**
+
 1. Clone the repository
 2. Navigate to project directory
 3. Run: docker-compose up --build (or docker compose up --build for newer Docker versions)
@@ -31,6 +33,7 @@ Authentication: JWT tokens with Google OAuth integration
 5. Access API docs at http://localhost:8000/docs
 
 **Method 2 - Local Development:**
+
 1. Clone the repository
 2. Create PostgreSQL database named 'sidemoney_db'
 3. Backend setup:
