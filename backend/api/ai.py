@@ -93,18 +93,21 @@ async def get_enhanced_financial_analysis(
         )
 
 
-@router.post("/ocr/process", response_model=OCRResult)
+@router.post("/ocr", response_model=OCRResult)
 async def process_receipt_ocr(
-    file: UploadFile = File(..., description="Receipt or financial document image"),
-    current_user: User = Depends(get_current_user)
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
 ):
     """Process receipt/document using OCR to extract transaction data"""
     
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith('image/'):
+    # Validate file type - now accepting both images and PDFs
+    if not file.content_type or not (
+        file.content_type.startswith('image/') or 
+        file.content_type == 'application/pdf'
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an image (JPEG, PNG, etc.)"
+            detail="File must be an image (JPEG, PNG, etc.) or PDF document"
         )
     
     # Validate file size (10MB limit)

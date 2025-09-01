@@ -8,6 +8,8 @@ import logging
 import google.generativeai as genai
 from PIL import Image
 import io
+import PyPDF2
+from pdf2image import convert_from_bytes
 
 from models.transaction import ExpenseCategory, TransactionType
 from models.goal import Goal
@@ -428,14 +430,56 @@ class AIService:
             cls._record_api_call()
             model = genai.GenerativeModel('gemini-1.5-flash')
             
-            # Convert image data to PIL Image
-            image = Image.open(io.BytesIO(image_data))
+            # Determine file type and process accordingly
+            is_pdf = filename.lower().endswith('.pdf')
+            images = []
             
-            # Create OCR prompt
-            prompt = cls._create_ocr_prompt()
-            
-            response = model.generate_content([prompt, image])
-            response_text = response.text.strip()
+            if is_pdf:
+                # Process PDF file
+                try:
+                    # First try to extract text directly from PDF
+                    pdf_reader = PyPDF2.PdfReader(io.BytesIO(image_data))
+                    raw_text = ""
+                    for page in pdf_reader.pages:
+                        raw_text += page.extract_text() + "\n"
+                    
+                    # If PDF has extractable text, use it with Gemini
+                    if raw_text.strip():
+                        logger.info("PDF contains extractable text, processing with text analysis")
+                        response = model.generate_content([
+                            cls._create_pdf_text_ocr_prompt(), 
+                            f"PDF Content:\n{raw_text}"
+                        ])
+                        response_text = response.text.strip()
+                    else:
+                        # Convert PDF to images for OCR if no text found
+                        logger.info("PDF has no extractable text, converting to images for OCR")
+                        images = convert_from_bytes(image_data, dpi=200, first_page=1, last_page=3)  # Process first 3 pages max
+                        if not images:
+                            raise Exception("Could not convert PDF to images")
+                        
+                        # Use the first page for OCR (can be extended to process multiple pages)
+                        main_image = images[0]
+                        prompt = cls._create_ocr_prompt()
+                        response = model.generate_content([prompt, main_image])
+                        response_text = response.text.strip()
+                        
+                except Exception as e:
+                    logger.error(f"PDF processing failed: {e}")
+                    return OCRResult(
+                        transactions=[],
+                        total_amount=Decimal('0'),
+                        document_type="pdf",
+                        processing_confidence=0.0,
+                        raw_text=f"PDF processing failed: {str(e)}",
+                        warnings=[f"PDF processing failed: {str(e)}"]
+                    )
+            else:
+                # Process regular image file
+                image = Image.open(io.BytesIO(image_data))
+                prompt = cls._create_ocr_prompt()
+                response = model.generate_content([prompt, image])
+                response_text = response.text.strip()
             
             logger.info(f"Raw OCR response: {response_text[:500]}...")  # Log first 500 chars
             
@@ -534,6 +578,75 @@ CRITICAL INSTRUCTIONS:
 
 EXAMPLE VALID RESPONSE:
 {{"transactions":[{{"description":"T-Shirt","amount":25.50,"date":"2024-01-15","category":"SHOPPING","merchant":"Retail Store","confidence":0.95}}],"total_amount":25.50,"document_type":"receipt","processing_confidence":0.95,"raw_text":"Receipt content","warnings":[]}}
+"""
+
+    @classmethod
+    def _create_pdf_text_ocr_prompt(cls) -> str:
+        """Create structured prompt for PDF text extraction and transaction analysis"""
+        
+        categories = ', '.join([cat.value for cat in ExpenseCategory])
+        
+        return f"""
+IMPORTANT: You are an expert financial document analyzer. Analyze the PDF text content and extract transaction data. Return ONLY valid JSON - no markdown, no explanations, no code blocks.
+
+TASK: Extract structured transaction data from this PDF financial document text.
+
+EXTRACTION RULES:
+1. READ the text carefully - identify all transactions, line items, or financial entries
+2. For statements/invoices: Extract each transaction line separately
+3. For receipts: Extract each product/service line item separately
+4. Match descriptions with corresponding amounts
+5. Extract transaction dates (look for date patterns in the text)
+6. Categorize items appropriately from: {categories}
+7. Identify merchant/business names from headers or content
+8. Calculate totals or use provided amounts
+
+PDF TEXT PARSING PRIORITY:
+- Transaction entries with dates and amounts
+- Line items with descriptions and prices
+- Merchant/business information
+- Statement periods or transaction dates
+- Total amounts and subtotals
+
+JSON STRUCTURE (return exactly this format):
+{{
+  "transactions": [
+    {{
+      "description": "Transaction or item description (clean, readable)",
+      "amount": 25.50,
+      "date": "2024-01-15",
+      "category": "SHOPPING",
+      "merchant": "Business Name",
+      "confidence": 0.95
+    }}
+  ],
+  "total_amount": 363.99,
+  "document_type": "pdf_statement",
+  "processing_confidence": 0.95,
+  "raw_text": "Key extracted text from PDF",
+  "warnings": []
+}}
+
+CATEGORIES (use exact values):
+- SHOPPING: Clothing, electronics, general retail
+- FOOD_DINING: Restaurants, fast food, cafes
+- GROCERIES: Supermarkets, food stores
+- TRANSPORTATION: Gas, parking, rideshare
+- ENTERTAINMENT: Movies, games, subscriptions
+- BILLS_UTILITIES: Phone, internet, electricity
+- HEALTHCARE: Medical, pharmacy, dental
+- MISCELLANEOUS: When category unclear
+
+CRITICAL INSTRUCTIONS:
+- Return ONLY the JSON object
+- No ```json``` markdown formatting
+- No additional text before or after JSON
+- Ensure all JSON syntax is correct
+- Use double quotes for all strings
+- Include decimal amounts (e.g., 25.50, not 25.5)
+- Date format: YYYY-MM-DD
+- If date unclear, use document date or current date
+- Extract individual transactions, not summary totals
 """
 
     @classmethod
