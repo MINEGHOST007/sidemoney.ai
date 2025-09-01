@@ -33,6 +33,9 @@ Real-time financial insights and analytics at a glance
 
 Set and track your financial goals with progress monitoring
 
+<img width="1438" height="1458" alt="image" src="https://github.com/user-attachments/assets/d034b47a-1d0b-48c3-852b-d56b93e1a93d" />
+
+
 ### AI Analysis
 
 Get personalized financial insights and recommendations
