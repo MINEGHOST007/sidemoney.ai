@@ -1,6 +1,6 @@
 <div align="center">
   
-# SideMoney.ai
+# sidemoney.ai
 
 **AI-Powered Personal Finance Assistant**
 
