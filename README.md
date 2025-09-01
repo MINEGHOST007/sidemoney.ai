@@ -21,30 +21,30 @@ Live Demo • Documentation • Report Bug • Request Feature
 
 ### Landing Page
 
-![Landing Page](./docs/screenshots/landing-page.png)
+https://github.com/user-attachments/assets/e95c62e9-5120-451b-993d-23b8421daa84
+
 Clean, modern landing page with feature highlights
 
 ### Dashboard Overview
 
-![Dashboard](./docs/screenshots/dashboard.png)
 Real-time financial insights and analytics at a glance
 
 ### Goals Tracking
 
-![Goals](./docs/screenshots/goals.png)
 Set and track your financial goals with progress monitoring
 
 ### AI Analysis
 
-![AI Analysis](./docs/screenshots/ai-analysis.png)
 Get personalized financial insights and recommendations
 
 ### OCR Receipt Processing
 
-![OCR Upload](./docs/screenshots/ocr-upload.png)
 Upload receipts, invoices, and PDF documents - AI extracts transaction details automatically
 
 **PDF Support:** Upload PDF receipts, bank statements, and invoices with intelligent text extraction and automatic conversion of scanned PDFs to images for OCR processing (supports multi-page documents up to first 3 pages).
+
+
+https://github.com/user-attachments/assets/85035394-12d4-473a-9b88-b249b4883e66
 
 ---
 
@@ -400,16 +400,6 @@ We welcome contributions! Here's how you can help:
 - **Vercel** for excellent Next.js documentation
 - **FastAPI** community for the amazing framework
 - **shadcn/ui** for beautiful UI components
-
----
-
-## Project Stats
-
-![GitHub stars](https://img.shields.io/github/stars/MINEGHOST007/sidemoney.ai?style=social)
-![GitHub forks](https://img.shields.io/github/forks/MINEGHOST007/sidemoney.ai?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/MINEGHOST007/sidemoney.ai?style=social)
-
----
 
 <div align="center">
 
