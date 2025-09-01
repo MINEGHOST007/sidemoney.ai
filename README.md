@@ -232,6 +232,9 @@ pnpm dev
 The API is fully documented with OpenAPI/Swagger. Once the backend is running, visit:
 
 - **Interactive Docs**: http://localhost:8000/docs
+<img width="1654" height="1282" alt="image" src="https://github.com/user-attachments/assets/77c0edac-d47e-4212-a050-49b988caf373" />
+<img width="1617" height="1154" alt="image" src="https://github.com/user-attachments/assets/287d90c8-1138-4df6-bdb2-e8781e39f0a0" />
+
 - **ReDoc**: http://localhost:8000/redoc
 
 ### Key Endpoints
