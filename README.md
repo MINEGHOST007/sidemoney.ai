@@ -374,25 +374,6 @@ We welcome contributions! Here's how you can help:
 - **Advanced OCR**: Improved accuracy and support for more document types
 - **API Integrations**: Third-party service integrations for enhanced functionality
 
----
-
-## Known Issues
-
-- OCR accuracy may vary with image quality
-- Large transaction datasets may have slower load times
-- Mobile responsiveness is optimized for modern devices
-
----
-
-## Support
-
-- **Documentation**: Check our Wiki for detailed guides
-- **Issues**: Report bugs in our Issue Tracker
-- **Discussions**: Join our Community Discussions
-- **Email**: support@sidemoney.ai
-
----
-
 ## Acknowledgments
 
 - **Google Generative AI** for powering our AI features
