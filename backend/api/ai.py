@@ -61,18 +61,31 @@ async def get_enhanced_financial_analysis(
         
         goals_data = []
         for goal in goals:
+            # Calculate current progress based on user's current_amount
+            # For simplicity, we'll assume each goal gets proportional share of user's current_amount
+            progress_amount = 0.0
+            if len(goals) > 0:
+                progress_amount = float(current_user.current_amount) / len(goals)
+            
             goal_dict = {
                 "id": str(goal.id),
                 "title": goal.title,
                 "target_amount": float(goal.target_amount),
-                "current_amount": float(goal.current_amount),
+                "current_amount": min(progress_amount, float(goal.target_amount)),  # Use calculated progress
                 "deadline": goal.deadline.isoformat(),
                 "days_remaining": (goal.deadline - date.today()).days
             }
             goals_data.append(goal_dict)
         
-        # Get daily budget (default to $50 if not set)
-        daily_budget = float(current_user.daily_budget) if current_user.daily_budget else 50.0
+        # Get daily budget based on monthly income and budget multiplier
+        daily_budget = 50.0  # Default fallback
+        if current_user.monthly_income and current_user.daily_budget_multiplier:
+            # Calculate daily budget from monthly income
+            monthly_budget = float(current_user.monthly_income) * float(current_user.daily_budget_multiplier)
+            daily_budget = monthly_budget / 30  # Approximate daily budget
+        elif current_user.monthly_income:
+            # Use 30% of monthly income as default budget
+            daily_budget = float(current_user.monthly_income) * 0.3 / 30
         
         # Generate enhanced analysis
         analysis = AIService.generate_enhanced_analysis(
@@ -156,7 +169,15 @@ async def custom_ai_query(
         user_data = {}
         
         if request.include_budget:
-            user_data['daily_budget'] = float(current_user.daily_budget) if current_user.daily_budget else 50.0
+            # Calculate daily budget from user's monthly income and multiplier
+            daily_budget = 50.0  # Default fallback
+            if current_user.monthly_income and current_user.daily_budget_multiplier:
+                monthly_budget = float(current_user.monthly_income) * float(current_user.daily_budget_multiplier)
+                daily_budget = monthly_budget / 30
+            elif current_user.monthly_income:
+                daily_budget = float(current_user.monthly_income) * 0.3 / 30
+            
+            user_data['daily_budget'] = daily_budget
         
         if request.include_transactions:
             end_date = date.today()
@@ -181,16 +202,21 @@ async def custom_ai_query(
         
         if request.include_goals:
             goals = db.query(Goal).filter(Goal.user_id == current_user.id).all()
-            user_data['goals'] = [
-                {
+            goals_list = []
+            for g in goals:
+                # Calculate progress for each goal
+                progress_amount = 0.0
+                if len(goals) > 0:
+                    progress_amount = float(current_user.current_amount) / len(goals)
+                
+                goals_list.append({
                     "title": g.title,
                     "target_amount": float(g.target_amount),
-                    "current_amount": float(g.current_amount),
+                    "current_amount": min(progress_amount, float(g.target_amount)),
                     "deadline": g.deadline.isoformat(),
                     "days_remaining": (g.deadline - date.today()).days
-                }
-                for g in goals
-            ]
+                })
+            user_data['goals'] = goals_list
         
         # Process with AI
         response = await AIService.custom_ai_query(request, user_data)

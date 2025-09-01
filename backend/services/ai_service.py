@@ -208,29 +208,99 @@ class AIService:
                 # Fallback to basic analysis
                 return cls._generate_basic_analysis(user_spending, daily_budget, goals, transactions, period_days)
             
-            # Prepare data context
-            total_spending = sum(user_spending.values())
-            total_budget = daily_budget * period_days
-            total_income = sum(t.get('amount', 0) for t in transactions if t.get('type') == 'income')
-            
             # Create comprehensive prompt
             prompt = cls._create_financial_analysis_prompt(
                 user_spending, daily_budget, goals, transactions, period_days
             )
             
             response = model.generate_content(prompt)
+            response_text = response.text.strip()
+            
+            # Clean the response text to ensure it's valid JSON
+            response_text = cls._clean_json_response(response_text)
             
             # Parse structured response
             try:
-                analysis_data = json.loads(response.text)
-                return AIAnalysisResponse(**analysis_data)
-            except json.JSONDecodeError:
+                analysis_data = json.loads(response_text)
+                # Validate the structure before creating the response
+                validated_data = cls._validate_analysis_data(analysis_data)
+                return AIAnalysisResponse(**validated_data)
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON parsing failed: {e}. Response: {response_text[:500]}...")
                 # If JSON parsing fails, create structured response from text
-                return cls._parse_text_response(response.text, user_spending, daily_budget)
+                return cls._parse_text_response(response_text, user_spending, daily_budget)
                 
         except Exception as e:
             logger.error(f"Gemini analysis failed: {e}")
             return cls._generate_basic_analysis(user_spending, daily_budget, goals, transactions, period_days)
+
+    @classmethod
+    def _clean_json_response(cls, response_text: str) -> str:
+        """Clean the response text to ensure it's valid JSON"""
+        # Remove markdown code blocks if present
+        response_text = re.sub(r'^```(?:json)?\s*', '', response_text, flags=re.MULTILINE)
+        response_text = re.sub(r'\s*```$', '', response_text, flags=re.MULTILINE)
+        
+        # Remove any leading/trailing whitespace
+        response_text = response_text.strip()
+        
+        # Ensure it starts with { and ends with }
+        if not response_text.startswith('{'):
+            # Try to find the first { character
+            start_idx = response_text.find('{')
+            if start_idx != -1:
+                response_text = response_text[start_idx:]
+        
+        if not response_text.endswith('}'):
+            # Try to find the last } character
+            end_idx = response_text.rfind('}')
+            if end_idx != -1:
+                response_text = response_text[:end_idx + 1]
+        
+        return response_text
+
+    @classmethod
+    def _validate_analysis_data(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate and sanitize the analysis data"""
+        validated = {
+            "recommendations": [],
+            "insights": [],
+            "summary": data.get("summary", "Financial analysis completed."),
+            "confidence_score": max(0.0, min(1.0, float(data.get("confidence_score", 0.7))))
+        }
+        
+        # Validate recommendations
+        for rec in data.get("recommendations", []):
+            if isinstance(rec, dict) and rec.get("title") and rec.get("description"):
+                validated_rec = {
+                    "title": str(rec["title"])[:60],  # Truncate to max length
+                    "description": str(rec["description"])[:200],
+                    "type": rec.get("type", "budget_optimization"),
+                    "priority": rec.get("priority", "medium"),
+                    "potential_savings": float(rec.get("potential_savings", 0.0)),
+                    "action_items": rec.get("action_items", [])[:5],  # Max 5 items
+                }
+                if rec.get("category_focus"):
+                    validated_rec["category_focus"] = rec["category_focus"]
+                validated["recommendations"].append(validated_rec)
+        
+        # Validate insights
+        for insight in data.get("insights", []):
+            if isinstance(insight, dict) and insight.get("title") and insight.get("description"):
+                validated_insight = {
+                    "insight_type": insight.get("insight_type", "pattern"),
+                    "title": str(insight["title"])[:50],
+                    "description": str(insight["description"])[:150],
+                    "trend_direction": insight.get("trend_direction", "stable"),
+                    "severity": insight.get("severity", "medium")
+                }
+                if insight.get("metric_value") is not None:
+                    validated_insight["metric_value"] = float(insight["metric_value"])
+                if insight.get("metric_unit"):
+                    validated_insight["metric_unit"] = insight["metric_unit"]
+                validated["insights"].append(validated_insight)
+        
+        return validated
 
     @classmethod
     def _create_financial_analysis_prompt(
@@ -247,70 +317,65 @@ class AIService:
         total_budget = daily_budget * period_days
         total_income = sum(t.get('amount', 0) for t in transactions if t.get('type') == 'income')
         
-        return f"""
-        You are a professional financial advisor AI. Analyze the user's financial data and provide structured insights.
+        return f"""CRITICAL INSTRUCTION: You MUST respond with VALID JSON ONLY. No markdown, no explanations, no code blocks, no backticks. Just pure JSON.
 
-        **USER FINANCIAL DATA:**
-        - Daily Budget: ${daily_budget:.2f}
-        - Period: {period_days} days
-        - Total Budget: ${total_budget:.2f}
-        - Total Spending: ${total_spending:.2f}
-        - Total Income: ${total_income:.2f}
-        
-        **SPENDING BY CATEGORY:**
-        {json.dumps(user_spending, indent=2)}
-        
-        **FINANCIAL GOALS:**
-        {json.dumps(goals, indent=2)}
-        
-        **RECENT TRANSACTIONS (last 10):**
-        {json.dumps(transactions[-10:], indent=2, default=str)}
+FINANCIAL DATA ANALYSIS REQUEST:
+Daily Budget: ${daily_budget:.2f}
+Period: {period_days} days  
+Total Budget: ${total_budget:.2f}
+Total Spending: ${total_spending:.2f}
+Total Income: ${total_income:.2f}
 
-        **ANALYSIS REQUIREMENTS:**
-        1. Provide 3-5 personalized recommendations with specific action items
-        2. Generate 3-5 data-driven insights about spending patterns
-        3. Include potential savings estimates where applicable
-        4. Prioritize recommendations by impact and urgency
-        5. Consider user's goals and deadlines in recommendations
+SPENDING DATA: {json.dumps(user_spending)}
+GOALS DATA: {json.dumps(goals)}
+RECENT TRANSACTIONS: {json.dumps(transactions[-5:], default=str)}
 
-        **OUTPUT FORMAT (JSON):**
-        {{
-            "recommendations": [
-                {{
-                    "title": "Brief recommendation title",
-                    "description": "Detailed explanation and reasoning",
-                    "type": "budget_optimization|category_reduction|savings_increase|goal_acceleration|spending_pattern",
-                    "priority": "high|medium|low",
-                    "potential_savings": 150.00,
-                    "action_items": ["Specific step 1", "Specific step 2"],
-                    "category_focus": "FOOD_DINING|TRANSPORTATION|etc (optional)"
-                }}
-            ],
-            "insights": [
-                {{
-                    "insight_type": "trend|pattern|comparison",
-                    "title": "Brief insight title",
-                    "description": "Detailed insight explanation",
-                    "metric_value": 25.5,
-                    "metric_unit": "percent|dollars|days",
-                    "trend_direction": "up|down|stable",
-                    "severity": "low|medium|high"
-                }}
-            ],
-            "summary": "2-3 sentence overall financial health summary",
-            "confidence_score": 0.85
-        }}
+REQUIRED JSON SCHEMA - YOU MUST FOLLOW THIS EXACTLY:
+{{
+  "recommendations": [
+    {{
+      "title": "string (max 60 chars)",
+      "description": "string (max 200 chars, actionable advice)",
+      "type": "budget_optimization",
+      "priority": "high",
+      "potential_savings": 0.0,
+      "action_items": ["string", "string"],
+      "category_focus": "FOOD_DINING"
+    }}
+  ],
+  "insights": [
+    {{
+      "insight_type": "pattern",
+      "title": "string (max 50 chars)",
+      "description": "string (max 150 chars)",
+      "metric_value": 0.0,
+      "metric_unit": "dollars",
+      "trend_direction": "up",
+      "severity": "medium"
+    }}
+  ],
+  "summary": "string (max 150 chars)",
+  "confidence_score": 0.85
+}}
 
-        **GUIDELINES:**
-        - Be specific and actionable in recommendations
-        - Use actual numbers from the data
-        - Consider seasonal patterns and user behavior
-        - Prioritize high-impact, achievable changes
-        - Be encouraging but honest about financial challenges
-        - Focus on practical, implementable advice
-        
-        Respond with ONLY the JSON object, no additional text.
-        """
+MANDATORY FIELD VALUES:
+- type: ONLY "budget_optimization", "category_reduction", "savings_increase", "goal_acceleration", or "spending_pattern"
+- priority: ONLY "high", "medium", or "low"  
+- insight_type: ONLY "trend", "pattern", or "comparison"
+- metric_unit: ONLY "dollars", "percent", or "days"
+- trend_direction: ONLY "up", "down", or "stable"
+- severity: ONLY "low", "medium", or "high"
+- category_focus: ONLY ExpenseCategory values like "FOOD_DINING", "TRANSPORTATION", etc.
+
+ANALYSIS RULES:
+1. Generate 2-4 recommendations with specific dollar amounts
+2. Generate 2-4 insights with real metrics from the data
+3. All numbers must be realistic based on provided data
+4. Use actual spending amounts in calculations
+5. Action items must be specific and actionable
+6. Summary must reflect actual financial situation
+
+RESPONSE FORMAT: Start immediately with {{ and end with }}. NO OTHER TEXT ALLOWED."""
 
     @classmethod
     def _generate_basic_analysis(
@@ -890,28 +955,37 @@ CRITICAL INSTRUCTIONS:
         """Create context-aware prompt for custom queries"""
         
         context_parts = [
-            "You are a personal financial advisor AI assistant. Answer the user's question using their financial data.",
-            f"\n**USER QUESTION:** {request.user_query}\n"
+            "You are a professional financial advisor AI. Provide clear, actionable advice based on user's financial data.",
+            f"\nUSER QUESTION: {request.user_query}",
+            ""
         ]
         
         if request.include_budget and user_data.get('daily_budget'):
-            context_parts.append(f"**DAILY BUDGET:** ${user_data['daily_budget']:.2f}")
+            context_parts.append(f"DAILY BUDGET: ${user_data['daily_budget']:.2f}")
         
         if request.include_transactions and user_data.get('transactions'):
-            transactions = user_data['transactions'][-20:]  # Last 20 transactions
-            context_parts.append(f"**RECENT TRANSACTIONS:**\n{json.dumps(transactions, indent=2, default=str)}")
+            transactions = user_data['transactions'][-15:]  # Last 15 transactions
+            total_spent = sum(t.get('amount', 0) for t in transactions if t.get('type') == 'expense')
+            context_parts.append(f"RECENT SPENDING: ${total_spent:.2f}")
+            context_parts.append(f"TRANSACTIONS: {json.dumps(transactions, default=str)}")
         
         if request.include_goals and user_data.get('goals'):
-            context_parts.append(f"**FINANCIAL GOALS:**\n{json.dumps(user_data['goals'], indent=2, default=str)}")
+            goals_summary = []
+            for goal in user_data['goals']:
+                progress = (goal.get('current_amount', 0) / goal.get('target_amount', 1)) * 100
+                goals_summary.append(f"{goal.get('title')}: {progress:.0f}% complete")
+            context_parts.append(f"GOALS: {', '.join(goals_summary)}")
         
         context_parts.extend([
-            "\n**INSTRUCTIONS:**",
-            "- Provide specific, actionable advice based on the user's actual data",
-            "- Use concrete numbers and examples from their transactions",
-            "- Be encouraging but realistic about financial challenges",
-            "- Suggest specific tools or strategies they can implement",
-            "- If the question is unclear, ask for clarification",
-            "- Keep responses concise but comprehensive"
+            "",
+            "RESPONSE GUIDELINES:",
+            "- Answer directly and specifically using their actual data",
+            "- Include concrete numbers and calculations where relevant",
+            "- Provide 2-3 actionable recommendations",
+            "- Use bullet points for clear action items",
+            "- Be encouraging but realistic",
+            "- Keep response under 300 words",
+            "- If data is insufficient, suggest what information would help"
         ])
         
         return "\n".join(context_parts)

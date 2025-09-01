@@ -11,6 +11,8 @@ import { TransactionForm } from "@/components/transaction-form";
 import { GoalsList } from "@/components/goals-list";
 import { AnalyticsCharts } from "@/components/analytics-charts";
 import { OcrUpload } from "@/components/ocr-upload";
+import { AIAnalysis } from "@/components/ai-analysis";
+import { AIQuery } from "@/components/ai-query";
 import {
   TrendingUp,
   DollarSign,
@@ -20,6 +22,8 @@ import {
   BarChart3,
   Sparkles,
   Camera,
+  Brain,
+  MessageSquare,
 } from "lucide-react";
 
 type DailyBudget = {
@@ -182,6 +186,18 @@ export default function DashboardPage() {
               Goals
             </TabsTrigger>
             <TabsTrigger
+              value="ai-analysis"
+              className="bg-transparent border-0 text-white/60 hover:text-white data-[state=active]:text-[rgb(0,255,178)] data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[rgb(0,255,178)] rounded-none px-0 py-4 text-lg font-medium transition-colors"
+            >
+              AI Analysis
+            </TabsTrigger>
+            <TabsTrigger
+              value="ai-chat"
+              className="bg-transparent border-0 text-white/60 hover:text-white data-[state=active]:text-[rgb(0,255,178)] data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[rgb(0,255,178)] rounded-none px-0 py-4 text-lg font-medium transition-colors"
+            >
+              AI Chat
+            </TabsTrigger>
+            <TabsTrigger
               value="ocr"
               className="bg-transparent border-0 text-white/60 hover:text-white data-[state=active]:text-[rgb(0,255,178)] data-[state=active]:bg-transparent data-[state=active]:border-b-2 data-[state=active]:border-[rgb(0,255,178)] rounded-none px-0 py-4 text-lg font-medium transition-colors"
             >
@@ -218,6 +234,14 @@ export default function DashboardPage() {
             </h3>
             <GoalsList />
           </div>
+        </TabsContent>
+
+        <TabsContent value="ai-analysis" className="mt-8">
+          <AIAnalysis />
+        </TabsContent>
+
+        <TabsContent value="ai-chat" className="mt-8">
+          <AIQuery />
         </TabsContent>
 
         <TabsContent value="ocr" className="mt-8">

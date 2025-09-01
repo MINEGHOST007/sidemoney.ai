@@ -195,4 +195,47 @@ class BudgetCalculator:
             "average_daily_expense": float(average_daily_expense),
             "category_breakdown": category_breakdown,
             "insights": insights
+        }
+    
+    @staticmethod
+    def calculate_goal_progress(goal: Goal, current_amount: Decimal) -> Dict[str, Any]:
+        """Calculate progress for a specific goal"""
+        if not goal:
+            return {
+                "progress_percentage": 0,
+                "amount_needed": 0,
+                "is_achievable": False,
+                "days_remaining": 0,
+                "daily_savings_needed": 0
+            }
+        
+        current_amount = current_amount or Decimal(0)
+        target_amount = goal.target_amount or Decimal(0)
+        
+        # Calculate progress percentage
+        progress_percentage = (current_amount / target_amount) * 100 if target_amount > 0 else 0
+        progress_percentage = min(100, progress_percentage)  # Cap at 100%
+        
+        # Calculate amount still needed
+        amount_needed = max(Decimal(0), target_amount - current_amount)
+        
+        # Calculate days remaining
+        current_date = date.today()
+        days_remaining = (goal.deadline - current_date).days if goal.deadline >= current_date else 0
+        
+        # Calculate daily savings needed
+        daily_savings_needed = Decimal(0)
+        if days_remaining > 0 and amount_needed > 0:
+            daily_savings_needed = amount_needed / days_remaining
+        
+        # Check if goal is achievable (basic check)
+        is_achievable = current_amount >= target_amount or days_remaining > 0
+        
+        return {
+            "progress_percentage": float(progress_percentage),
+            "amount_needed": float(amount_needed),
+            "is_achievable": is_achievable,
+            "days_remaining": days_remaining,
+            "daily_savings_needed": float(daily_savings_needed),
+            "status": "completed" if progress_percentage >= 100 else "in_progress" if progress_percentage > 0 else "not_started"
         } 
