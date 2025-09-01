@@ -40,6 +40,11 @@ Set and track your financial goals with progress monitoring
 
 Get personalized financial insights and recommendations
 
+<img width="1715" height="1357" alt="image" src="https://github.com/user-attachments/assets/76d18c95-9803-40eb-9b88-3f7f852eeebd" />
+<img width="1719" height="1433" alt="image" src="https://github.com/user-attachments/assets/0ab315ad-ffea-43d3-b870-32c19c65e6c8" />
+<img width="1719" height="1433" alt="image" src="https://github.com/user-attachments/assets/0bf77767-6e4e-4336-bb1a-861124389938" />
+
+
 ### OCR Receipt Processing
 
 Upload receipts, invoices, and PDF documents - AI extracts transaction details automatically
