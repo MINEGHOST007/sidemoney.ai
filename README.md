@@ -59,7 +59,7 @@ Upload receipts, invoices, and PDF documents - AI extracts transaction details a
 
 **PDF Support:** Upload PDF receipts, bank statements, and invoices with intelligent text extraction and automatic conversion of scanned PDFs to images for OCR processing (supports multi-page documents up to first 3 pages).
 
-
+### Complete Demo of the application 
 https://github.com/user-attachments/assets/85035394-12d4-473a-9b88-b249b4883e66
 
 ---
